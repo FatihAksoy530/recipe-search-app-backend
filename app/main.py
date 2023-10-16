@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
-
+from app.routes import router  # Import the router
 
 def get_application():
     _app = FastAPI(title=settings.PROJECT_NAME)
@@ -14,7 +14,8 @@ def get_application():
         allow_headers=["*"],
     )
 
-    return _app
+    _app.include_router(router)  # Include the router
 
+    return _app
 
 app = get_application()
