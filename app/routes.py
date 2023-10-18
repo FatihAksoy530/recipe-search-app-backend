@@ -20,15 +20,52 @@ async def create_post(post: Post):
     response = client.index(index="posts", body=post.dict())
     return response['_id']
 
-@router.get("/search/")
+@router.get("/search")
 async def search_posts(q: str):
     body = {
         "query": {
-            "multi_match": {
-                "query": q,
-                "fields": ["title", "content"]
+            "bool": {
+                "should": [
+                    {
+                        "match": {
+                            "headline": q
+                        }
+                    },
+                    {
+                        "prefix": {
+                            "headline": q
+                        }
+                    }
+                ]
             }
-        }
+        },
+        "size": 10,
+        "_source": ["headline"],
     }
-    response = client.search(index="posts", body=body)
+
+    response = client.search(index="news", body=body)
+    return_data = []
+    for hit in response['hits']['hits']:
+        return_data.append(hit['_source'])
+    # return as json
+    return return_data
+
+@router.get("/post/{id}")
+async def get_post(id: str):
+    response = client.get(index="posts", id=id)
+    return response['_source']
+
+@router.delete("/post/{id}")
+async def delete_post(id: str):
+    response = client.delete(index="posts", id=id)
+    return response['result']
+
+@router.put("/post/{id}")
+async def update_post(id: str, post: Post):
+    response = client.update(index="posts", id=id, body={"doc": post.dict()})
+    return response['_id']
+
+@router.get("/posts")
+async def get_posts():
+    response = client.search(index="posts", body={"query": {"match_all": {}}})
     return [hit['_source'] for hit in response['hits']['hits']]
